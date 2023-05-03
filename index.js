@@ -26,12 +26,13 @@ async function run(){
         //collections  are here 
         const usersCollection = client.db('aircncDB').collection('usersCollection')
         const homeCollection = client.db('aircncDB').collection('homeCollection')
-        //save user email and jwet 
+        const bookingCollection = client.db('aircncDB').collection('bookingCollection')
+        //save user email and jwt 
         app.put('/user/:email', async(req, res)=>{
            try{
             const email = req.params.email
             const user = req.body
-            console.log(user, email)
+            console.log("USER : ",user, "Email: ",email)
             //create a filter to update email 
             const filter = {email : email}
              // this option instructs the method to create a document if no documents match the filter
@@ -45,7 +46,7 @@ async function run(){
             const result = await  usersCollection.updateOne(filter, updateDoc,  options)
             console.log(result)
             const token = jwt.sign(user, process.env.SECRET_ACCESSTOKEN, {
-                expiresIn : '24h'
+                expiresIn : '3d'
             })
             res.send({result, token})
            }
@@ -53,6 +54,69 @@ async function run(){
             console.log(err.message)
            }
         })
+
+        // get the role of an user 
+        app.get('/user/:email', async(req, res)=>{
+            const email = req.params.email
+            const query = {email : email}
+            const user = await usersCollection.findOne(query)
+            res.send(user)
+        })
+
+
+        // save booking data in our database 
+        app.post('/bookings', async(req,res) =>{
+            try{
+                const bookingData = req.body
+                console.log(bookingData)
+                const result = await bookingCollection.insertOne(bookingData)
+                console.log(result)
+                res.send( result)
+            }
+            catch(err){
+                console.log(err.message)
+                res.send(err.message)
+            }
+        })
+
+        // get all the bookings of an user 
+        app.get('/bookings', async(req,res) => {
+            try{
+                const email = req.query.email
+                console.log(email)
+            if(email){
+                const query = {guestEmail: email}
+                const result = await  bookingCollection.find(query).toArray()
+                    res.send({
+                        message: "success",
+                        data: result
+                    })
+    
+    
+            }            
+            }
+            catch(err){
+                res.send(err.message)
+            }
+        })
+
+        app.get('/allBookings', async(req,res) =>{
+            try{
+                const bookings = await bookingCollection.find({}).toArray()
+                res.send({
+                    message: 'success', 
+                    data : bookings
+                })
+            }
+            catch(err){
+                console.log(err.message)
+                res.send({
+                    message: err.message
+                })
+            }
+
+        })
+
 
     }
     catch(err){
@@ -71,7 +135,7 @@ run()
 
 
 app.get('/', (req, res)=>{
-    res.send('AirCnC server is running')
+    res.json('AirCnC server is running')
 })
 app.listen(port, ()=>{
     console.log(`server is running on port: ${port}`)

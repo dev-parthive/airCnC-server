@@ -63,6 +63,13 @@ async function run(){
             res.send(user)
         })
 
+        // Get all users 
+        app.get('/users', async(req, res)=>{
+            const users = await usersCollection.find().toArray()
+            console.log(users)
+            res.send(users)
+        })
+
 
         // save booking data in our database 
         app.post('/bookings', async(req,res) =>{
@@ -82,23 +89,25 @@ async function run(){
         // get all the bookings of an user 
         app.get('/bookings', async(req,res) => {
             try{
+                let query = {}
                 const email = req.query.email
-                console.log(email)
+                console.log("Email is: ", email)
             if(email){
-                const query = {guestEmail: email}
-                const result = await  bookingCollection.find(query).toArray()
-                    res.send({
-                        message: "success",
-                        data: result
-                    })
+                 query = {
+                    guestEmail: email,
+                }
     
-    
-            }            
+            }   
+            const booking = await bookingCollection.find(query).toArray()
+            res.send(booking)
             }
             catch(err){
                 res.send(err.message)
             }
         })
+
+
+        // Get allBookings for Admin 
 
         app.get('/allBookings', async(req,res) =>{
             try{

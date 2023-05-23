@@ -125,6 +125,13 @@ async function run(){
             }
 
         })
+        //add a new home 
+        app.post('/homes', async (req, res)=>{
+            const homes = req.body;
+            const result = await homeCollection.insertOne(homes)
+            console.log(result)
+            res.send(result)
+        })
 
 
     }

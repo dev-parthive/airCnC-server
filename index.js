@@ -133,6 +133,15 @@ async function run(){
             res.send(result)
         })
 
+        // get all homes 
+        app.get('/homes', async (req, res)=>{
+            const query = {}
+            const cursor = homeCollection.find(query)
+            const homes = await cursor.toArray()
+            res.send(homes)
+            
+        })
+
 
     }
     catch(err){
@@ -144,6 +153,7 @@ async function run(){
     }
     
 }
+
 run()
 
 

@@ -1,13 +1,15 @@
 const express = require('express')
 const app = express()
 const port = process.env.PORT || 5000;
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const cors = require('cors')
 const jwt  = require('jsonwebtoken')
 
 //middlewares 
-app.use(cors())
-app.use(express.json())
+// app.use(cors())
+// app.use(express.json())
+
+app.use([cors(), express.json()])
 
 // require dotenv 
 // db (aircncDB)
@@ -140,6 +142,27 @@ async function run(){
             const homes = await cursor.toArray()
             res.send(homes)
             
+        })
+
+        //get a single home details 
+        app.get('/home/:id', async(req, res)=>{
+            
+            try{
+                const id = req.params.id
+                const query = { _id: new ObjectId(id) }
+                const home = await homeCollection.findOne(query)
+                console.log(home)
+                if(home == null){
+                    res.json('Home not founded')
+                }else{
+    
+                    res.send(home)
+                }
+            }
+            catch(err){
+                res.send(err)
+            }
+    
         })
 
 

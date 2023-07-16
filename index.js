@@ -1,6 +1,7 @@
 const express = require('express')
 const app = express()
 const port = process.env.PORT || 5000;
+const nodemailer = require('nodemailer')
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const cors = require('cors')
 const jwt  = require('jsonwebtoken')
@@ -17,6 +18,52 @@ app.use([cors(), express.json()])
 require('dotenv').config()
 require('colors')
 //database connectino 
+
+// Decode JWT 
+const verifyJWT = (req,res, next) =>{
+    const authHeader = req.headers.authorization
+    if(!authHeader){
+        return res.status(401).sned({message: 'Unauthorized access'})
+    }
+    const token = authHeader.split(' ')[1]
+    jwt.verify(token, process.env.SECRET_ACCESSTOKEN , (err,decoded)=>{
+        if(err){
+            return res.status(403).send({message: 'FOrbidden Access'})
+        }
+        console.log(decoded)
+        req.decoded = decoded
+        next()
+
+    })
+
+}
+
+///send Email by Nodemailer 
+const sendMail = (emailData ,email)=>{
+    const transporter = nodemailer.createTransport({
+        service: 'gmail', 
+        auth: {
+            user: process.env.EMAIL, 
+            pass: process.env.PASS
+        },
+        
+    })
+
+    const mailOptions = {
+        from: process.env.EMAIL, 
+        to : email, 
+        subject : emailData?.subject, 
+        html: `<p>${emailData?.message}</p>`
+    }
+    transporter.sendMail(mailOptions , function (err, info){
+        if(err){
+            console.log(err);
+        }else{
+            console.log('Email sent ' , info.response);
+        }
+
+    })
+}
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.afdwhlk.mongodb.net/?retryWrites=true&w=majority`;
 const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true, serverApi: ServerApiVersion.v1 });
@@ -79,7 +126,8 @@ async function run(){
                 const bookingData = req.body
                 console.log(bookingData)
                 const result = await bookingCollection.insertOne(bookingData)
-                console.log(result)
+                console.log(bookingData, result)
+                sendMail({subject: 'Booking Successfull !!!', message: `BookingID : ${result.insertedId}`}, bookingData?.guestEmail)
                 res.send( result)
             }
             catch(err){
@@ -90,22 +138,17 @@ async function run(){
 
         // get all the bookings of an user 
         app.get('/bookings', async(req,res) => {
-            try{
-                let query = {}
-                const email = req.query.email
-                console.log("Email is: ", email)
+            let query = {}
+            const email = req.query.email
             if(email){
-                 query = {
-                    guestEmail: email,
+                console.log(email)
+                query  = {
+                    guestEmail : email
                 }
-    
-            }   
-            const booking = await bookingCollection.find(query).toArray()
-            res.send(booking)
             }
-            catch(err){
-                res.send(err.message)
-            }
+            const cursor = bookingCollection.find(query)
+            const bookings = await cursor.toArray()
+            res.send(bookings)
         })
 
 
